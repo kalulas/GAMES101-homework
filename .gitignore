@@ -1,0 +1,8 @@
+# folders
+.vs/
+out/
+
+# files
+*.pdf
+*.zip
+CMakeSettings.json
