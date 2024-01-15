@@ -43,6 +43,31 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
+    float center_x = x + 0.5f;
+    float center_y = y + 0.5f;
+    float direction = 0.0f;
+    for (int i = 0; i < 3; i++)
+    {
+        int next_idx = (i + 1) % 3;
+        Vector3f va = Vector3f(center_x, center_y, _v[i].z()) - _v[i];
+        Vector3f vb = _v[next_idx] - _v[i];
+        Vector3f ret = va.cross(vb);
+        if (i == 0)
+        {
+            direction = ret.z() / abs(ret.z());
+        }
+        else
+        {
+            float _dir = ret.z() / abs(ret.z());
+            if (_dir * direction < 0)
+            {
+                // not the same direction
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -102,10 +127,56 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
     }
 }
 
+Eigen::Vector4f rst::rasterizer::get_bounding_box(std::array<Vector4f, 3> points)
+{
+    constexpr float infinity = std::numeric_limits<float>::infinity();
+    constexpr float neg_infinity = -std::numeric_limits<float>::infinity();
+    // [min_X, min_Y, max_X, max_Y]
+    Eigen::Vector4f boundingBox = Eigen::Vector4f(infinity, infinity, neg_infinity, neg_infinity);
+
+    for (auto& vec : points)
+    {
+        if (vec[0] < boundingBox[0]) boundingBox[0] = vec[0];
+        if (vec[1] < boundingBox[1]) boundingBox[1] = vec[1];
+        if (vec[0] > boundingBox[2]) boundingBox[2] = vec[0];
+        if (vec[1] > boundingBox[3]) boundingBox[3] = vec[1];
+    }
+
+    return boundingBox;
+}
+
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     auto v = t.toVector4();
-    
+    Eigen::Vector4f box = get_bounding_box(v);
+    for (int x = box[0]; x <= box[2] && x < width; x++)
+    {
+        for (int y = box[1]; y <= box[3] && y < height; y++)
+        {
+            float center_x = x + 0.5f;
+            float center_y = y + 0.5f;
+            if (!insideTriangle(x, y, t.v))
+            {
+                continue;
+            }
+
+            auto[alpha, beta, gamma] = computeBarycentric2D(center_x, center_y, t.v);
+            //float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+            //float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+            float w_reciprocal = 1.0 / (alpha + beta + gamma);
+            float z_interpolated = alpha * v[0].z() + beta * v[1].z() + gamma * v[2].z();
+            z_interpolated *= w_reciprocal;
+
+            int depth_buf_idx = get_index(x, y);
+            if (z_interpolated < depth_buf[depth_buf_idx])
+            {
+                depth_buf[depth_buf_idx] = z_interpolated;
+                set_pixel(Vector3f(x, y, 0.0f), t.getColor());
+            }
+            // TODO calculate z value
+        }
+    }
+
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
 

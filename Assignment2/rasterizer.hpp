@@ -79,25 +79,27 @@ namespace rst
 
         void rasterize_triangle(const Triangle& t);
 
-        // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
+        Eigen::Vector4f get_bounding_box(std::array<Vector4f, 3> points);
 
-    private:
-        Eigen::Matrix4f model;
-        Eigen::Matrix4f view;
-        Eigen::Matrix4f projection;
+// VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
 
-        std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
-        std::map<int, std::vector<Eigen::Vector3i>> ind_buf;
-        std::map<int, std::vector<Eigen::Vector3f>> col_buf;
+private:
+Eigen::Matrix4f model;
+Eigen::Matrix4f view;
+Eigen::Matrix4f projection;
 
-        std::vector<Eigen::Vector3f> frame_buf;
+std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
+std::map<int, std::vector<Eigen::Vector3i>> ind_buf;
+std::map<int, std::vector<Eigen::Vector3f>> col_buf;
 
-        std::vector<float> depth_buf;
-        int get_index(int x, int y);
+std::vector<Eigen::Vector3f> frame_buf;
 
-        int width, height;
+std::vector<float> depth_buf;
+int get_index(int x, int y);
 
-        int next_id = 0;
-        int get_next_id() { return next_id++; }
+int width, height;
+
+int next_id = 0;
+int get_next_id() { return next_id++; }
     };
 }
