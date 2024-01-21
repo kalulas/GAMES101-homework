@@ -1,6 +1,7 @@
 # folders
 .vs/
 out/
+build/
 
 # files
 *.pdf
