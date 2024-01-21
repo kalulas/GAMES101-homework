@@ -88,13 +88,13 @@ int main(int argc, const char** argv)
                     {-2, 0, -2},
                     {3.5, -1, -5},
                     {2.5, 1.5, -5},
-                    {-1, 0.5, -5}
+                    {-1, 0.5, -5},
             };
 
     std::vector<Eigen::Vector3i> ind
             {
                     {0, 1, 2},
-                    {3, 4, 5}
+                    {3, 4, 5},
             };
 
     std::vector<Eigen::Vector3f> cols
@@ -104,7 +104,7 @@ int main(int argc, const char** argv)
                     {217.0, 238.0, 185.0},
                     {185.0, 217.0, 238.0},
                     {185.0, 217.0, 238.0},
-                    {185.0, 217.0, 238.0}
+                    {185.0, 217.0, 238.0},
             };
 
     auto pos_id = r.load_positions(pos);

@@ -81,25 +81,32 @@ namespace rst
 
         Eigen::Vector4f get_bounding_box(std::array<Vector4f, 3> points);
 
-// VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
+        // VERTEX SHADER -> MVP -> Clipping -> /.W -> VIEWPORT -> DRAWLINE/DRAWTRI -> FRAGSHADER
 
-private:
-Eigen::Matrix4f model;
-Eigen::Matrix4f view;
-Eigen::Matrix4f projection;
+    private:
+        Eigen::Matrix4f model;
+        Eigen::Matrix4f view;
+        Eigen::Matrix4f projection;
 
-std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
-std::map<int, std::vector<Eigen::Vector3i>> ind_buf;
-std::map<int, std::vector<Eigen::Vector3f>> col_buf;
+        std::map<int, std::vector<Eigen::Vector3f>> pos_buf;
+        std::map<int, std::vector<Eigen::Vector3i>> ind_buf;
+        std::map<int, std::vector<Eigen::Vector3f>> col_buf;
 
-std::vector<Eigen::Vector3f> frame_buf;
+        std::vector<Eigen::Vector3f> frame_buf;
 
-std::vector<float> depth_buf;
-int get_index(int x, int y);
+        //std::vector<float> depth_buf;
 
-int width, height;
+        std::vector<Eigen::Matrix2f> super_sampling_depth_buf;
 
-int next_id = 0;
-int get_next_id() { return next_id++; }
+        int get_index(int x, int y);
+
+        int compare_super_sampling_depth(int x, int y, Eigen::Matrix2f depth);
+
+        void set_super_sampling_depth(int x, int y, Eigen::Matrix2f depth);
+
+        int width, height;
+
+        int next_id = 0;
+        int get_next_id() { return next_id++; }
     };
 }

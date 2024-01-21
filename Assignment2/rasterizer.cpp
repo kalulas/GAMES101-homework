@@ -39,17 +39,15 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
     return Vector4f(v3.x(), v3.y(), v3.z(), w);
 }
 
-
-static bool insideTriangle(int x, int y, const Vector3f* _v)
-{   
+static bool inside_triangle(float x, float y, const Vector3f* _v)
+{
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
-    float center_x = x + 0.5f;
-    float center_y = y + 0.5f;
+
     float direction = 0.0f;
     for (int i = 0; i < 3; i++)
     {
         int next_idx = (i + 1) % 3;
-        Vector3f va = Vector3f(center_x, center_y, _v[i].z()) - _v[i];
+        Vector3f va = Vector3f(x, y, _v[i].z()) - _v[i];
         Vector3f vb = _v[next_idx] - _v[i];
         Vector3f ret = va.cross(vb);
         if (i == 0)
@@ -147,36 +145,6 @@ Eigen::Vector4f rst::rasterizer::get_bounding_box(std::array<Vector4f, 3> points
 
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
-    auto v = t.toVector4();
-    Eigen::Vector4f box = get_bounding_box(v);
-    for (int x = box[0]; x <= box[2] && x < width; x++)
-    {
-        for (int y = box[1]; y <= box[3] && y < height; y++)
-        {
-            float center_x = x + 0.5f;
-            float center_y = y + 0.5f;
-            if (!insideTriangle(x, y, t.v))
-            {
-                continue;
-            }
-
-            auto[alpha, beta, gamma] = computeBarycentric2D(center_x, center_y, t.v);
-            //float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-            //float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-            float w_reciprocal = 1.0 / (alpha + beta + gamma);
-            float z_interpolated = alpha * v[0].z() + beta * v[1].z() + gamma * v[2].z();
-            z_interpolated *= w_reciprocal;
-
-            int depth_buf_idx = get_index(x, y);
-            if (z_interpolated < depth_buf[depth_buf_idx])
-            {
-                depth_buf[depth_buf_idx] = z_interpolated;
-                set_pixel(Vector3f(x, y, 0.0f), t.getColor());
-            }
-            // TODO calculate z value
-        }
-    }
-
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
 
@@ -187,6 +155,59 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     //z_interpolated *= w_reciprocal;
 
     // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
+
+    auto v = t.toVector4();
+    Eigen::Vector4f box = get_bounding_box(v);
+    for (int y = box[1]; y <= box[3] && y < height; y++)
+    {
+        for (int x = box[0]; x <= box[2] && x < width; x++)
+        {
+            int insideCount = 0;
+            Eigen::Matrix2f depth2x2;
+            constexpr float infinity = std::numeric_limits<float>::infinity();
+            depth2x2.setConstant(infinity);
+            
+            for (size_t i = 0; i < 4; i++)
+            {
+                float _y = y + 0.25f + (i / 2) * 0.5f;
+                float _x = x + 0.25f + (i % 2) * 0.5f;
+
+                if (!inside_triangle(_x, _y, t.v))
+                {
+                    continue;
+                }
+
+                insideCount++;
+                auto [alpha, beta, gamma] = computeBarycentric2D(_x, _y, t.v);
+                float w_reciprocal = 1.0 / (alpha + beta + gamma);
+                float z_interpolated = alpha * v[0].z() + beta * v[1].z() + gamma * v[2].z();
+                z_interpolated *= w_reciprocal;
+
+                depth2x2(i) = z_interpolated;
+            }
+            
+            if (insideCount == 0)
+            {
+                continue;
+            }
+
+            int depthCount = compare_super_sampling_depth(x, y, depth2x2);
+            Matrix2f target = super_sampling_depth_buf[get_index(x, y)];
+            if (depthCount == 0)
+            {
+                continue;
+            }
+
+            // notice: we use insideCount/sampleCount here instead of depthCount/sampleCount,
+            // otherwise black edges will appear at the intersection of the two triangles.
+            float factor = (float)insideCount / 4;
+            Eigen::Vector3f color = t.getColor();
+            Eigen::Vector3f scaledColor = color * factor;
+
+            set_pixel(Vector3f(x, y, 0.0f), scaledColor);
+            set_super_sampling_depth(x, y, depth2x2);
+        }
+    }
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)
@@ -210,21 +231,62 @@ void rst::rasterizer::clear(rst::Buffers buff)
     {
         std::fill(frame_buf.begin(), frame_buf.end(), Eigen::Vector3f{0, 0, 0});
     }
+    //if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
+    //{
+    //    std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
+    //}
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
-        std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
+        constexpr float infinity = std::numeric_limits<float>::infinity();
+        Eigen::Matrix2f infinity2x2;
+        infinity2x2 << infinity, infinity, infinity, infinity;
+        std::fill(super_sampling_depth_buf.begin(), super_sampling_depth_buf.end(), infinity2x2);
     }
 }
 
 rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
     frame_buf.resize(w * h);
-    depth_buf.resize(w * h);
+    //depth_buf.resize(w * h);
+    super_sampling_depth_buf.resize(w * h);
 }
 
 int rst::rasterizer::get_index(int x, int y)
 {
     return (height-1-y)*width + x;
+}
+
+int rst::rasterizer::compare_super_sampling_depth(int x, int y, Eigen::Matrix2f depth) {
+    Eigen::Matrix2f target = super_sampling_depth_buf[get_index(x, y)];
+    int lesserCount = 0;
+    int matrixSize = target.size();
+    for (size_t i = 0; i < matrixSize; i++)
+    {
+        if (depth(i) < target(i))
+        {
+            lesserCount++;
+        }
+    }
+
+    return lesserCount;
+}
+
+void rst::rasterizer::set_super_sampling_depth(int x, int y, Eigen::Matrix2f depth) {
+    Eigen::Matrix2f filteredDepth;
+    int index = get_index(x, y);
+    filteredDepth = super_sampling_depth_buf[index];
+
+    constexpr float infinity = std::numeric_limits<float>::infinity();
+    for (size_t i = 0; i < depth.size(); i++)
+    {
+        if (depth(i) < infinity)
+        {
+            filteredDepth(i) = depth(i);
+        }
+    }
+
+    super_sampling_depth_buf[index] = filteredDepth;
+    //super_sampling_depth_buf[get_index(x, y)] = depth;
 }
 
 void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color)
