@@ -161,7 +161,7 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     Eigen::Vector3f amb_light_intensity{10, 10, 10};
     Eigen::Vector3f eye_pos{0, 0, 10};
 
-    float p = 150;
+    float p = 150; // 150 ???
 
     Eigen::Vector3f color = payload.color;
     Eigen::Vector3f point = payload.view_pos;
@@ -172,7 +172,29 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        
+        float distance_factor = 1 / (light.position - point).squaredNorm(); // 1 / r^2
+        Eigen::Vector3f distance_intensity = light.intensity * distance_factor;
+        Eigen::Vector3f light_dir = (light.position - point).normalized();
+        Eigen::Vector3f view_dir = (eye_pos - point).normalized();
+        Eigen::Vector3f half_dir = (view_dir + light_dir).normalized();
+
+        // ambient term: 环境光 / 间接光照
+        Eigen::Vector3f ambient(ka[0] * amb_light_intensity[0], ka[1] * amb_light_intensity[1], ka[2] * amb_light_intensity[2]);
+        result_color += ambient;
+
+        // diffuse term: 漫反射
+        Eigen::Vector3f diffuse(0, 0, 0);
+        float absorb_factor = std::max(0.0f, light_dir.dot(normal));
+        Eigen::Vector3f diffuse_intensity(kd[0] * distance_intensity[0], kd[1] * distance_intensity[1], kd[2] * distance_intensity[2]);
+        diffuse = diffuse_intensity * absorb_factor;
+        result_color += diffuse;
+
+        // specular term: 高光
+        Eigen::Vector3f specular(0, 0, 0);
+        float specular_factor = std::pow(std::max(0.0f, half_dir.dot(normal)), p);
+        Eigen::Vector3f specular_intensity(ks[0] * distance_intensity[0], ks[1] * distance_intensity[1], ks[2] * distance_intensity[2]);
+        specular = specular_intensity * specular_factor;
+        result_color += specular;
     }
 
     return result_color * 255.f;

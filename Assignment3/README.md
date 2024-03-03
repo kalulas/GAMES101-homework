@@ -8,6 +8,10 @@
 
 实现透视投影（来自作业1）
 
+`Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)`
+
+实现 Blinn-Phong Reflection Model
+
 **raterizer.cpp** 
 
 `std::tuple<float, float, float, float> rst::rasterizer::get_bounding_box(const Triangle& t)`
@@ -23,3 +27,7 @@
 ### Normal Shader
 
 ![output_normal](./images/output_normal.png)
+
+### Phong Fragment Shader
+
+![output_phong](./images/output_phong.png)
