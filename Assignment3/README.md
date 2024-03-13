@@ -12,6 +12,18 @@
 
 实现 Blinn-Phong Reflection Model
 
+`Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)`
+
+实现 Texture Shading Fragment Shader
+
+`Eigen::Vector3f bump_fragment_shader(const fragment_shader_payload& payload)`
+
+实现 Bump Fragment Shader
+
+`Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payload)`
+
+实现 Displacement Fragment Shader
+
 **raterizer.cpp** 
 
 `std::tuple<float, float, float, float> rst::rasterizer::get_bounding_box(const Triangle& t)`
@@ -31,3 +43,15 @@
 ### Phong Fragment Shader
 
 ![output_phong](./images/output_phong.png)
+
+### Texture Fragment Shader
+
+![output_phong](./images/output_texture.png)
+
+### Bump Fragment Shader
+
+![output_phong](./images/output_bump.png)
+
+### Displacement Fragment Shader
+
+![output_phong](./images/output_displacement.png)
