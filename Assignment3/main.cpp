@@ -275,19 +275,19 @@ Eigen::Vector3f displacement_fragment_shader(const fragment_shader_payload& payl
     // Position p = p + kn * n * h(u,v)
     // Normal n = normalize(TBN * ln)
 
-    Eigen::Vector3f bump_normal = bump_mapping(normal, payload, kh, kn);
-
+    Eigen::Vector3f n = normal;
     Texture* tex = payload.texture;
     float u = payload.tex_coords[0];
     float v = payload.tex_coords[1];
-    Eigen::Vector3f bump_point = point + kn * bump_normal * tex->getColor(u, v).norm();
-    Eigen::Vector3f result_color{ 0,0,0 };
+    point = point + kn * n * tex->getColor(u, v).norm();
+    n = bump_mapping(n, payload, kh, kn);
 
+    Eigen::Vector3f result_color{ 0,0,0 };
     for (auto& light : lights)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        result_color += phong(light, bump_point, eye_pos, amb_light_intensity, bump_normal, ka, kd, ks, p);
+        result_color += phong(light, point, eye_pos, amb_light_intensity, n, ka, kd, ks, p);
     }
 
     return result_color * 255.f;
