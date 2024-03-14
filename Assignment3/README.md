@@ -36,10 +36,6 @@
 
 ## Result
 
-观察到牛牛左腿上存在黑色缺口，同时 displacement fragment shader与作业中给出的效果图不太一致。
-
-后续若debug到具体问题会进行更新。
-
 ### Normal Shader
 
 ![output_normal](./images/output_normal.png)
