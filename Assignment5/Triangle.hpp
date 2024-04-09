@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Object.hpp"
 
@@ -11,6 +11,37 @@ bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1, const Vector3f
     // that's specified bt v0, v1 and v2 intersects with the ray (whose
     // origin is *orig* and direction is *dir*)
     // Also don't forget to update tnear, u and v.
+
+    // Möller–Trumbore ray-triangle intersection algorithm
+    // keyword: Barycentric Coordinates, Carmer's Rule
+
+    // orig - v0 = u * (v1 - v0) + v * (v2 - v0) - tnear * dir
+
+    auto s = orig - v0;
+    auto e1 = v1 - v0;
+    auto e2 = v2 - v0;
+
+    auto s1 = crossProduct(dir, e2);
+    auto s2 = crossProduct(s, e1);
+
+    float s1e1 = dotProduct(s1, e1);
+    float t = dotProduct(s2, e2) / s1e1;
+    float b1 = dotProduct(s1, s) / s1e1;
+    float b2 = dotProduct(s2, dir) / s1e1;
+
+    const float epsilon = 0.00001;
+
+    //if (t >= 0.0f && b1 >= 0.0f && b2 >= 0.0f && (1 - b1 - b2) >= 0.0f)
+    // to avoid blue pixels on the ground, see https://games-cn.org/forums/topic/zuoye5dibanduijiaoxianshangdexiangsuweibeizhengquexuanranwenti/
+    // result: "\Assignment5\images\result_with_artifacts.png"
+    if (t + epsilon >= 0.0f && b1 + epsilon >= 0.0f && b2 + epsilon >= 0.0f && (1 - b1 - b2 + epsilon) >= 0.0f)
+    {
+        tnear = t;
+        u = b1;
+        v = b2;
+        return true;
+    }
+
     return false;
 }
 
