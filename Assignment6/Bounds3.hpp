@@ -85,18 +85,38 @@ class Bounds3
     }
 
     inline bool IntersectP(const Ray& ray, const Vector3f& invDir,
-                           const std::array<int, 3>& dirisNeg) const;
+                           const std::array<bool, 3>& dirisPositive) const;
 };
 
 
 
 inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
-                                const std::array<int, 3>& dirIsNeg) const
+                                const std::array<bool, 3>& dirIsPositive) const
 {
     // invDir: ray direction(x,y,z), invDir=(1.0/x,1.0/y,1.0/z), use this because Multiply is faster that Division
-    // dirIsNeg: ray direction(x,y,z), dirIsNeg=[int(x>0),int(y>0),int(z>0)], use this to simplify your logic
+    // dirIsNeg: ray direction(x,y,z), dirIsPositive=[bool, bool, bool], use this to simplify your logic
     // TODO test if ray bound intersects
-    
+
+    bool dir_x_pos = dirIsPositive[0];
+    bool dir_y_pos = dirIsPositive[1];
+    bool dir_z_pos = dirIsPositive[2];
+
+    Vector3f min_delta = pMin - ray.origin;
+    Vector3f max_delta = pMax - ray.origin;
+
+    float min_x_t = (dir_x_pos ? min_delta.x : max_delta.x) * invDir.x;
+    float min_y_t = (dir_y_pos ? min_delta.y : max_delta.y) * invDir.y;
+    float min_z_t = (dir_z_pos ? min_delta.z : max_delta.z) * invDir.z;
+
+    float t_enter = std::max(std::max(min_x_t, min_y_t), min_z_t);
+
+    float max_x_t = (dir_x_pos ? max_delta.x : min_delta.x) * invDir.x;
+    float max_y_t = (dir_y_pos ? max_delta.y : min_delta.y) * invDir.y;
+    float max_z_t = (dir_z_pos ? max_delta.z : min_delta.z) * invDir.z;
+
+    float t_exit = std::min(std::min(max_x_t, max_y_t), max_z_t);
+
+    return t_exit > t_enter && t_exit >= 0;
 }
 
 inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
