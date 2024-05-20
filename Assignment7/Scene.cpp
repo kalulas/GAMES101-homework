@@ -57,9 +57,63 @@ bool Scene::trace(
     return (*hitObject != nullptr);
 }
 
+Vector3f Scene::shade(Intersection& hit_obj, Vector3f wo) const {
+    if (hit_obj.m->hasEmission())
+    {
+        return hit_obj.m->getEmission();
+    }
+
+    const float epsilon = 0.0005f;
+    // Contribution from the light source
+    Vector3f L_dir;
+    float light_pdf;
+    Intersection hit_light;
+	sampleLight(hit_light, light_pdf);
+    Vector3f object2light = hit_light.coords - hit_obj.coords;
+    Vector3f object2light_dir = normalize(object2light);
+
+    // check if the light was blocked
+	Ray block_check_ray(hit_obj.coords, object2light_dir);
+    Intersection block_ret = intersect(block_check_ray);
+    if (block_ret.distance - object2light.norm() > -epsilon)
+    {
+        Vector3f f_r = hit_obj.m->eval(object2light_dir, wo, hit_obj.normal);
+        float sqr_distance = dotProduct(object2light, object2light);
+        float cos_A = std::max(0.0f, dotProduct(hit_obj.normal, object2light_dir));
+		float cos_B = std::max(0.0f, dotProduct(hit_light.normal, -object2light_dir));
+		L_dir = hit_light.emit * f_r * cos_A * cos_B / sqr_distance / light_pdf;
+    }
+
+    // Contribution from other reflectors.
+    Vector3f L_indir;
+    if (get_random_float() < RussianRoulette)
+    {
+        Vector3f next_obj_dir = hit_obj.m->sample(wo, hit_obj.normal).normalized();
+		float pdf = hit_obj.m->pdf(wo, next_obj_dir, hit_obj.normal);
+        if (pdf > epsilon)
+        {
+			Intersection next_obj = intersect(Ray(hit_obj.coords, next_obj_dir));
+            if (next_obj.happened && !next_obj.m->hasEmission())
+            {
+                Vector3f f_r = hit_obj.m->eval(next_obj_dir, wo, hit_obj.normal);
+				float cos = std::max(0.0f, dotProduct(hit_obj.normal, next_obj_dir));
+				L_indir = shade(next_obj, -next_obj_dir) * f_r * cos / pdf / RussianRoulette;
+            }
+        }
+    }
+
+    return L_dir + L_indir;
+}
+
 // Implementation of Path Tracing
 Vector3f Scene::castRay(const Ray &ray, int depth) const
 {
     // TO DO Implement Path Tracing Algorithm here
-    return Vector3f{ 0.0f };
+    Intersection intersect_ret = intersect(ray);
+    if (!intersect_ret.happened)
+    {
+        return Vector3f{};
+    }
+
+    return shade(intersect_ret, -ray.direction);
 }
