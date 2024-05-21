@@ -57,7 +57,7 @@ bool Scene::trace(
     return (*hitObject != nullptr);
 }
 
-Vector3f Scene::shade(Intersection& hit_obj, Vector3f wo) const {
+Vector3f Scene::shade(Intersection& hit_obj, Vector3f wo, std::mt19937& rng) const {
     if (hit_obj.m->hasEmission())
     {
         return hit_obj.m->getEmission();
@@ -86,7 +86,9 @@ Vector3f Scene::shade(Intersection& hit_obj, Vector3f wo) const {
 
     // Contribution from other reflectors.
     Vector3f L_indir;
-    if (get_random_float() < RussianRoulette)
+    std::uniform_real_distribution<float> dist(0.f, 1.f);
+    float random_result = dist(rng);
+    if (random_result < RussianRoulette)
     {
         Vector3f next_obj_dir = hit_obj.m->sample(wo, hit_obj.normal).normalized();
 		float pdf = hit_obj.m->pdf(wo, next_obj_dir, hit_obj.normal);
@@ -97,7 +99,7 @@ Vector3f Scene::shade(Intersection& hit_obj, Vector3f wo) const {
             {
                 Vector3f f_r = hit_obj.m->eval(next_obj_dir, wo, hit_obj.normal);
 				float cos = std::max(0.0f, dotProduct(hit_obj.normal, next_obj_dir));
-				L_indir = shade(next_obj, -next_obj_dir) * f_r * cos / pdf / RussianRoulette;
+				L_indir = shade(next_obj, -next_obj_dir, rng) * f_r * cos / pdf / RussianRoulette;
             }
         }
     }
@@ -106,7 +108,7 @@ Vector3f Scene::shade(Intersection& hit_obj, Vector3f wo) const {
 }
 
 // Implementation of Path Tracing
-Vector3f Scene::castRay(const Ray &ray, int depth) const
+Vector3f Scene::castRay(const Ray &ray, int depth, std::mt19937 &rng) const
 {
     // TO DO Implement Path Tracing Algorithm here
     Intersection intersect_ret = intersect(ray);
@@ -115,5 +117,5 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         return Vector3f{};
     }
 
-    return shade(intersect_ret, -ray.direction);
+    return shade(intersect_ret, -ray.direction, rng);
 }
