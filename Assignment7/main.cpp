@@ -12,7 +12,26 @@
 // function().
 int main(int argc, char** argv)
 {
+    int spp = 16;
+    if (argc >= 2)
+    {
+        try
+        {
+            spp = std::stoi(std::string(argv[1]));
+        }
+        catch (const std::invalid_argument& ia)
+        {
+            std::cerr << "Invalid argument: " << ia.what() << '\n';
+            return 1;
+        }
+        catch (const std::out_of_range& oor)
+        {
+            std::cerr << "Out of range: " << oor.what() << '\n';
+            return 1;
+        }
+    }
 
+    std::cout << "target SPP set to " << spp << std::endl;
     // Change the definition here to change resolution
     Scene scene(784, 784);
 
@@ -45,7 +64,7 @@ int main(int argc, char** argv)
     Renderer r;
 
     auto start = std::chrono::system_clock::now();
-    r.Render(scene);
+    r.Render(scene, spp);
     auto stop = std::chrono::system_clock::now();
 
     std::cout << "Render complete: \n";

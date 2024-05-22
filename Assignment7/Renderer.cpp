@@ -6,6 +6,7 @@
 #include "Scene.hpp"
 #include "Renderer.hpp"
 #include <omp.h>
+#include <chrono>
 
 
 inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
@@ -15,7 +16,7 @@ const float EPSILON = 0.00016;
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
 // framebuffer is saved to a file.
-void Renderer::Render(const Scene& scene)
+void Renderer::Render(const Scene& scene, int spp)
 {
     std::vector<Vector3f> framebuffer(scene.width * scene.height);
 
@@ -25,15 +26,14 @@ void Renderer::Render(const Scene& scene)
     int m = 0;
 
     // change the spp value to change sample ammount
-    int spp = 1024;
-    std::cout << "SPP: " << spp << "\n";
+    std::cout << "render with SPP: " << spp << "\n";
 
-#pragma omp parallel for shared(framebuffer) private(m)
+    std::random_device dev;
+    std::mt19937 rng(dev());
+
+#pragma omp parallel for shared(framebuffer) private(m, rng)
     for (m = 0; m < scene.width * scene.height; m++)
     {
-        std::random_device dev;
-        std::mt19937 rng(dev());
-
         uint32_t m_x = m % scene.width;
 		uint32_t m_y = m / scene.height;
         // generate primary ray direction
@@ -67,8 +67,18 @@ void Renderer::Render(const Scene& scene)
 
     UpdateProgress(1.f);
 
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm now_tm = *std::localtime(&now_c);
+
+    // 构造文件名
+    char filename[256];
+    std::snprintf(filename, sizeof(filename), "output_%02d%02d%02d_width%d_height%d_spp%d.ppm",
+        now_tm.tm_hour, now_tm.tm_min, now_tm.tm_sec,
+        scene.width, scene.height, spp);
+
     // save framebuffer to file
-    FILE* fp = fopen("binary.ppm", "wb");
+    FILE* fp = fopen(filename, "wb");
     (void)fprintf(fp, "P6\n%d %d\n255\n", scene.width, scene.height);
     for (auto i = 0; i < scene.height * scene.width; ++i) {
         static unsigned char color[3];
