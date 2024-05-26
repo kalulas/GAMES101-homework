@@ -31,6 +31,8 @@ int main(int argc, char** argv)
         }
     }
 
+	bool microfacet_bunny = argc >= 3 && std::string(argv[2]) == "microfacet";
+
     std::cout << "target SPP set to " << spp << std::endl;
     // Change the definition here to change resolution
     Scene scene(784, 784);
@@ -44,6 +46,10 @@ int main(int argc, char** argv)
     Material* light = new Material(DIFFUSE, (8.0f * Vector3f(0.747f+0.058f, 0.747f+0.258f, 0.747f) + 15.6f * Vector3f(0.740f+0.287f,0.740f+0.160f,0.740f) + 18.4f *Vector3f(0.737f+0.642f,0.737f+0.159f,0.737f)));
     light->Kd = Vector3f(0.65f);
 
+    Material* white_microfacet = new Material(MICROFACET, Vector3f(0.0f));
+    white_microfacet->Ks = Vector3f(0.725f, 0.71f, 0.68f);
+    white_microfacet->Kd = Vector3f(0.725f, 0.71f, 0.68f);
+
     // VisualStudio execute it under ".\out\build\x64-Debug\", so ...
     MeshTriangle floor("../../../models/cornellbox/floor.obj", white);
     MeshTriangle shortbox("../../../models/cornellbox/shortbox.obj", white);
@@ -52,12 +58,22 @@ int main(int argc, char** argv)
     MeshTriangle right("../../../models/cornellbox/right.obj", green);
     MeshTriangle light_("../../../models/cornellbox/light.obj", light);
 
+    MeshTriangle bunny("../../../models/bunny/bunny.obj", white_microfacet,
+        Vector3f{ 300.0f, 0.0f, 300.0f }, Vector3f{ 2000.0f, 2000.0f, 2000.0f });
+
     scene.Add(&floor);
-    scene.Add(&shortbox);
-    scene.Add(&tallbox);
     scene.Add(&left);
     scene.Add(&right);
     scene.Add(&light_);
+
+    if (!microfacet_bunny)
+    {
+        scene.Add(&shortbox);
+        scene.Add(&tallbox);
+    }
+    else {
+        scene.Add(&bunny);
+    }
 
     scene.buildBVH();
 

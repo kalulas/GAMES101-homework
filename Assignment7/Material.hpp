@@ -7,7 +7,7 @@
 
 #include "Vector.hpp"
 
-enum MaterialType { DIFFUSE};
+enum MaterialType { DIFFUSE, MICROFACET };
 
 class Material{
 private:
@@ -38,6 +38,40 @@ private:
         float eta = etai / etat;
         float k = 1 - eta * eta * (1 - cosi * cosi);
         return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
+    }
+
+	/// <summary>
+	/// Trowbridge-Reitz GGX Normal Distribution Function
+	/// </summary>
+	float distributionGGX(const Vector3f& N, const Vector3f& H, const float roughness) const
+	{
+		float a = roughness * roughness;
+		float a2 = a * a;
+		float NdotH = std::max(dotProduct(N, H), 0.0f); // prevent negative value
+		float NdotH2 = NdotH * NdotH;
+
+		float nom = a2;
+		float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
+		denom = M_PI * denom * denom;
+
+		return nom / std::max(denom, 0.0000001f); // prevent divide by zero
+	}
+
+    float geometrySchlickGGX(float dotProduct, float k) const {
+        float nom = dotProduct;
+        float denom = dotProduct * (1.0f - k) + k;
+        return nom / denom;
+    }
+
+    float smithMaskingShadowingGGX(const Vector3f& N, const Vector3f& V, const Vector3f& L, float roughness) const {
+        float alpha = std::powf(((roughness + 1.0f)/2), 2.0f);
+		float k = alpha / 2.0f;
+		float NdotV = std::max(dotProduct(N, V), 0.0f);
+		float NdotL = std::max(dotProduct(N, L), 0.0f);
+		float ggx1 = geometrySchlickGGX(NdotV, k);
+		float ggx2 = geometrySchlickGGX(NdotL, k);
+
+		return ggx1 * ggx2;
     }
 
     // Compute Fresnel equation
@@ -132,6 +166,7 @@ Vector3f Material::getColorAt(double u, double v) {
 Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
     switch(m_type){
         case DIFFUSE:
+        case MICROFACET:
         {
             // uniform sample on the hemisphere
             float x_1 = get_random_float(), x_2 = get_random_float();
@@ -148,6 +183,7 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
 float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
     switch(m_type){
         case DIFFUSE:
+        case MICROFACET:
         {
             // uniform sample probability 1 / (2 * PI)
             if (dotProduct(wo, N) > 0.0f)
@@ -168,6 +204,42 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             if (cosalpha > 0.0f) {
                 Vector3f diffuse = Kd / M_PI;
                 return diffuse;
+            }
+            else
+                return Vector3f(0.0f);
+            break;
+        }
+        case MICROFACET:
+        {
+            float cosalpha = dotProduct(N, wo);
+            if (cosalpha > 0.0f) {
+                // Cook-Torrance BRDF
+				// f_r = k_d * f_d + k_s * f_s
+				// f_s = D * G * F / (4 * |n . l| * |n . v|)
+
+                float roughness = 0.40f; /* parameter0 */
+                Vector3f V = -wi;
+                Vector3f L = wo;
+				Vector3f H = normalize(V + L);
+
+				// D: distribution of normals
+                float D = distributionGGX(N, H, roughness);
+                // G: shadowing masking term
+                float G = smithMaskingShadowingGGX(N, V, L, roughness);
+				// F: fresnel term
+                float F;
+                float etat = 1.85; /* parameter1 */
+                fresnel(wi, N, etat, F);
+
+                Vector3f fs = (D * G * F) / std::max((4 * std::max(dotProduct(N, L), 0.0f) 
+                    * std::max(dotProduct(N, V), 0.0f)), 0.001f);
+
+                float ks = F;
+                float kd = 1.0f - ks;
+                
+                Vector3f fd = kd * (1.0f / M_PI);
+
+                return Ks * fs + Kd * fd;
             }
             else
                 return Vector3f(0.0f);

@@ -26,6 +26,12 @@ Möller–Trumbore 算法在框架中已基本完成，通过计算结果 `t_tmp
 
 于 `Vector3f Scene::castRay(const Ray &ray, int depth) const` 中调用，实现 Path Tracing 算法
 
+### Material.hpp
+
+`Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N)`
+
+方法支持了 Microfacet 模型，新增了相应的 `distributionGGX`，`smithMaskingShadowingGGX`，`geometrySchlinkGGX` 方法以实现 Cook-Torrance BRDF
+
 ## Result
 
 单线程执行，SPP16，耗时 21 minutes 29 seconds，输出结果如下
@@ -51,3 +57,7 @@ SPP512 耗时 568 seconds，已可以得到较理想的输出
 SPP1024 耗时 1108 seconds，相较 SPP512 差异不大
 
 ![multithread-spp1024](./images/result-spp1024-openpm.png)
+
+完成材质拓展 Microfacet 模型，借用 bunny 模型在 SPP512 下的输出结果
+
+![multithread-microfacet-spp512](./images/result-spp512-openpm-microfacet.png)
