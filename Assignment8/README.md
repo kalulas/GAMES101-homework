@@ -4,9 +4,10 @@
 
 ```bash
 vcpkg install freetype
-vcpkg install glfw3
-vcpkg install glad
 vcpkg install libxrandr
+# 项目工程内置，不需要手动安装
+# vcpkg install glfw3
+# vcpkg install glad
 ```
 
 ### remove unistd.h
