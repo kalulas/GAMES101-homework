@@ -1,10 +1,9 @@
 # Assignment8
 
-## Dependency
+## Prerequisite
 
 ```bash
 vcpkg install freetype
-vcpkg install libxrandr
 # 项目工程内置，不需要手动安装
 # vcpkg install glfw3
 # vcpkg install glad
@@ -45,7 +44,7 @@ int main(int argc, char **argv) {
   }
 ```
 
-### GLEW_STATIC
+### #define GLEW_STATIC
 
 之后再次编译，可能遇到的一系列错误输出：
 
@@ -56,7 +55,7 @@ int main(int argc, char **argv) {
 ```c++
 #ifndef CGL_TEXTOSD_H
 #define CGL_TEXTOSD_H
-// 以静态库形式链接GLEW
+
 #ifndef GLEW_STATIC
 #define GLEW_STATIC
 
@@ -76,8 +75,38 @@ int main(int argc, char **argv) {
 
 ## Modifications
 
-...
+### CGL\src\viewer.cpp
+
+`void Viewer::init()`
+
+调整窗口为启动后居中
+
+### src\main.cpp & src\application.cpp
+
+支持从启动参数中传入质点个数
+
+### src\rope.cpp
+
+实现质点、弹簧属性的设置，实现显式、半隐式 Euler，实现显式 Verlet
 
 ## Result
 
-...
+半隐式 Euler：质点数3，每帧仿真步长64
+
+![ropesim-3nodes-64steps-only-euler](https://s2.loli.net/2024/06/05/lh3QbmCdAILDWow.gif)
+
+半隐式 Euler：质点数16，每帧仿真步长64
+
+![ropesim-16nodes-64steps-only-euler](https://s2.loli.net/2024/06/05/vcxkBm6HFJNWuTC.gif)
+
+半隐式 Euler：质点数32，每帧仿真步长64
+
+![ropesim-32nodes-64steps-only-euler](https://s2.loli.net/2024/06/05/RxKv2csJokSXQdh.gif)
+
+半隐式 Euler & 显式 Verlet：质点数16，每帧仿真步长64
+
+![ropesim-16nodes-64steps-euler-and-verlet](https://s2.loli.net/2024/06/05/QkF19HJ4DCiEWPc.gif)
+
+半隐式 Euler & 显式 Verlet：质点数32，每帧仿真步长64
+
+![ropesim-32nodes-64steps-euler-and-verlet](https://s2.loli.net/2024/06/05/3B1q5IdzViPTlYo.gif)

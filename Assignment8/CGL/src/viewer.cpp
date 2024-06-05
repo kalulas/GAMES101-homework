@@ -75,6 +75,16 @@ void Viewer::init() {
     exit( 1 );
   }
 
+  // get the resolution of the monitor
+  const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+  // calculate the window position
+  int window_x = (mode->width - DEFAULT_W) / 2;
+  int window_y = (mode->height - DEFAULT_H) / 2;
+
+  // move the window to the center of the screen
+  glfwSetWindowPos(window, window_x, window_y);
+
   // set context
   glfwMakeContextCurrent( window );
   glfwSwapInterval(1);

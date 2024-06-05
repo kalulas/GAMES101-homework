@@ -35,6 +35,9 @@ int main(int argc, char **argv) {
       else if (args[i] == "-s") {
           config.steps_per_frame = std::stoi(args[++i]);
       }
+      else if (args[i] == "-n") {
+          config.node_count = std::stoi(args[++i]);
+      }
       else {
           usage(argv[0]);
           return 1;

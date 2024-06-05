@@ -1,6 +1,6 @@
 #ifndef CGL_TEXTOSD_H
 #define CGL_TEXTOSD_H
-// 以静态库形式链接GLEW
+// use glew as static library
 #ifndef GLEW_STATIC
 #define GLEW_STATIC
 

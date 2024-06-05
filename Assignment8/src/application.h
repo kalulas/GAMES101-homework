@@ -28,6 +28,7 @@ struct AppConfig {
     // Environment variables
     gravity = Vector2D(0, -1);
     steps_per_frame = 64;
+    node_count = 3;
   }
 
   float mass;
@@ -35,6 +36,7 @@ struct AppConfig {
 
   float steps_per_frame;
   Vector2D gravity;
+  int node_count;
 };
 
 class Application : public Renderer {
