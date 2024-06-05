@@ -1,5 +1,12 @@
 # Assignment2
 
+## Prerequisite
+
+```bash
+$ vcpkg install eigen3
+$ vcpkg install opencv4
+```
+
 ## Modifications
 
 **main.cpp** 

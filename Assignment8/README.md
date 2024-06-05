@@ -3,7 +3,7 @@
 ## Prerequisite
 
 ```bash
-vcpkg install freetype
+$ vcpkg install freetype
 # 项目工程内置，不需要手动安装
 # vcpkg install glfw3
 # vcpkg install glad
