@@ -1,5 +1,7 @@
 # GAMES101-homework
 
+![games101-assignments-overview](https://s2.loli.net/2024/06/07/hpISw3lgjYZCWO7.png)
+
 ## Introduction
 
 此项目包含了 Games101 课程的所有作业。
